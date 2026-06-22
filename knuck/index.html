@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<base href="/knuck/">
+<title>KNUCK's voice mail — voice mail</title>
+<style>
+  :root {
+    --bg: #15171F;
+    --bg-elevated: #1C1F2B;
+    --line: rgba(255,255,255,0.08);
+    --text-primary: #F2F1ED;
+    --text-secondary: rgba(242,241,237,0.5);
+    --accent: #8B9A4D;
+    --accent-dim: rgba(139,154,77,0.35);
+    --mono: 'JetBrains Mono', 'SF Mono', monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone-frame {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    padding: 0 4px;
+  }
+
+  .status-bar .rec-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 6px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .header {
+    margin-bottom: 40px;
+  }
+
+  .header .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+
+  .header h1 {
+    font-family: var(--mono);
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    margin-bottom: 8px;
+    word-break: keep-all;
+  }
+
+  .header .subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .track-count {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .track-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .track {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    background: transparent;
+    border: 1px solid transparent;
+  }
+
+  .track:hover {
+    background: var(--bg-elevated);
+  }
+
+  .track.active {
+    background: var(--bg-elevated);
+    border-color: var(--accent-dim);
+  }
+
+  .track-play-btn {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-secondary);
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .track.active .track-play-btn {
+    border-color: var(--accent);
+  }
+
+  .track-play-btn svg {
+    width: 13px;
+    height: 13px;
+    fill: var(--text-primary);
+  }
+
+  .track.active .track-play-btn svg {
+    fill: var(--accent);
+  }
+
+  .track-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .track-label {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.03em;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+
+  .track.active .track-label {
+    color: var(--accent);
+  }
+
+  .track-progress-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .track-bar {
+    flex: 1;
+    height: 3px;
+    background: var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .track-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--text-secondary);
+    border-radius: 2px;
+  }
+
+  .track.active .track-bar-fill {
+    background: var(--accent);
+  }
+
+  .track-time {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    min-width: 32px;
+  }
+
+  .waveform {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 16px;
+    flex-shrink: 0;
+    width: 18px;
+  }
+
+  .waveform span {
+    width: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+    height: 4px;
+    opacity: 0.3;
+  }
+
+  .track.active.playing .waveform span {
+    animation: wave 0.9s ease-in-out infinite;
+    opacity: 1;
+  }
+
+  .track.active.playing .waveform span:nth-child(1) { animation-delay: 0s; }
+  .track.active.playing .waveform span:nth-child(2) { animation-delay: 0.15s; }
+  .track.active.playing .waveform span:nth-child(3) { animation-delay: 0.3s; }
+
+  @keyframes wave {
+    0%, 100% { height: 4px; }
+    50% { height: 14px; }
+  }
+
+  .footer-note {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    font-family: var(--mono);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .status-bar .rec-dot { animation: none; }
+    .track.active.playing .waveform span { animation: none; height: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+  <div class="status-bar">
+    <span><span class="rec-dot"></span>VOICE MAIL</span>
+    <span id="current-time"></span>
+  </div>
+
+  <div class="header">
+    <div class="eyebrow">incoming message from</div>
+    <h1>KNUCK</h1>
+    <div class="subtitle">3 new messages waiting</div>
+  </div>
+
+  <div class="track-count">
+    <span id="track-status">탭하여 재생</span>
+    <span>3 MESSAGES</span>
+  </div>
+
+  <div class="track-list" id="track-list">
+    <!-- tracks injected here -->
+  </div>
+
+  <div class="footer-note">SCAN AGAIN TO REPLAY · KNUCK's voice mail</div>
+</div>
+
+<audio id="audio-player"></audio>
+
+<script>
+  const tracks = [{"label": "Track 14", "src": "audio/14_knuck_PKS.mp3"}, {"label": "Track 15", "src": "audio/15_knuck_HSY.mp3"}, {"label": "Track 16", "src": "audio/16_knuck_song.mp3"}];
+  const trackListEl = document.getElementById('track-list');
+  const audio = document.getElementById('audio-player');
+  const trackStatus = document.getElementById('track-status');
+  let currentIndex = null;
+  let isPlaying = false;
+
+  function formatTime(sec) {
+    if (!isFinite(sec)) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function renderTracks() {
+    trackListEl.innerHTML = tracks.map((t, i) => `
+      <div class="track" data-index="${i}" id="track-${i}">
+        <button class="track-play-btn" aria-label="play">
+          <svg viewBox="0 0 24 24"><polygon points="6,4 20,12 6,20" /></svg>
+        </button>
+        <div class="track-info">
+          <div class="track-label">${t.label}</div>
+          <div class="track-progress-row">
+            <div class="track-bar"><div class="track-bar-fill" id="bar-${i}"></div></div>
+            <div class="track-time" id="time-${i}">0:00</div>
+          </div>
+        </div>
+        <div class="waveform"><span></span><span></span><span></span></div>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.track').forEach(el => {
+      el.addEventListener('click', () => {
+        const idx = parseInt(el.dataset.index);
+        if (currentIndex === idx) {
+          togglePlay();
+        } else {
+          playTrack(idx);
+        }
+      });
+    });
+  }
+
+  function setActiveTrack(idx) {
+    document.querySelectorAll('.track').forEach(el => el.classList.remove('active', 'playing'));
+    const el = document.getElementById(`track-${idx}`);
+    if (el) el.classList.add('active');
+  }
+
+  function playTrack(idx) {
+    currentIndex = idx;
+    audio.src = tracks[idx].src;
+    audio.play().then(() => {
+      isPlaying = true;
+      setActiveTrack(idx);
+      document.getElementById(`track-${idx}`).classList.add('playing');
+      trackStatus.textContent = '재생 중';
+    }).catch(() => {
+      trackStatus.textContent = '재생하려면 다시 탭하세요';
+    });
+  }
+
+  function togglePlay() {
+    if (currentIndex === null) return;
+    if (isPlaying) {
+      audio.pause();
+      isPlaying = false;
+      document.getElementById(`track-${currentIndex}`).classList.remove('playing');
+      trackStatus.textContent = '일시정지';
+    } else {
+      audio.play();
+      isPlaying = true;
+      document.getElementById(`track-${currentIndex}`).classList.add('playing');
+      trackStatus.textContent = '재생 중';
+    }
+  }
+
+  audio.addEventListener('timeupdate', () => {
+    if (currentIndex === null) return;
+    const pct = (audio.currentTime / audio.duration) * 100 || 0;
+    const bar = document.getElementById(`bar-${currentIndex}`);
+    const time = document.getElementById(`time-${currentIndex}`);
+    if (bar) bar.style.width = pct + '%';
+    if (time) time.textContent = formatTime(audio.currentTime);
+  });
+
+  audio.addEventListener('ended', () => {
+    if (currentIndex === null) return;
+    document.getElementById(`track-${currentIndex}`).classList.remove('playing');
+    isPlaying = false;
+    trackStatus.textContent = '재생 완료';
+    const bar = document.getElementById(`bar-${currentIndex}`);
+    if (bar) bar.style.width = '0%';
+    document.getElementById(`time-${currentIndex}`).textContent = '0:00';
+
+    if (currentIndex < tracks.length - 1) {
+      setTimeout(() => playTrack(currentIndex + 1), 600);
+    }
+  });
+
+  document.getElementById('current-time').textContent = new Date().toLocaleTimeString('ko-KR', {hour: '2-digit', minute:'2-digit'});
+
+  renderTracks();
+</script>
+
+</body>
+</html>
