@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<base href="/knuck/">
 <title>KNUCK's voice mail — voice mail</title>
 <style>
   :root {
@@ -241,6 +240,24 @@
     50% { height: 14px; }
   }
 
+  .notice {
+    margin-top: 32px;
+    padding: 16px 18px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.12);
+    font-size: 12px;
+    color: rgba(242,241,237,0.6);
+    line-height: 1.8;
+    text-align: center;
+    letter-spacing: 0.01em;
+  }
+
+  .notice-highlight {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
   .footer-note {
     margin-top: 40px;
     text-align: center;
@@ -279,12 +296,24 @@
     <!-- tracks injected here -->
   </div>
 
+  <div class="notice">
+    <span class="notice-highlight">본 음원의 무단 녹음, 캡처, 유포를 금합니다.</span><br>
+    팝업에서의 감상 전용이며, 외부 유출 시 저작권법에 따라 처벌 받을 수 있습니다.
+  </div>
+
   <div class="footer-note">SCAN AGAIN TO REPLAY · KNUCK's voice mail</div>
 </div>
 
 <audio id="audio-player"></audio>
 
 <script>
+  const audioBase = (() => {
+    const href = window.location.href.split('?')[0].split('#')[0];
+    if (href.endsWith('/')) return href;
+    if (/\.[a-z]+$/i.test(href)) return href.substring(0, href.lastIndexOf('/') + 1);
+    return href + '/';
+  })();
+
   const tracks = [{"label": "Track 14", "src": "audio/14_knuck_PKS.mp3"}, {"label": "Track 15", "src": "audio/15_knuck_HSY.mp3"}, {"label": "Track 16", "src": "audio/16_knuck_song.mp3"}];
   const trackListEl = document.getElementById('track-list');
   const audio = document.getElementById('audio-player');
@@ -336,7 +365,7 @@
 
   function playTrack(idx) {
     currentIndex = idx;
-    audio.src = tracks[idx].src;
+    audio.src = audioBase + tracks[idx].src;
     audio.play().then(() => {
       isPlaying = true;
       setActiveTrack(idx);
